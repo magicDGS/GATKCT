@@ -29,8 +29,16 @@
     <!-- TODO: add developers -->
   </developers>
 
+  <!-- fake scm connection for make work the buildnumber-maven-plugin: TODO: change to the repo -->
+  <scm>
+    <connection>scm:git:http://none</connection>
+    <url>scm:git:https://none</url>
+  </scm>
+
   <!-- PROJECT PROPERTIES AND REPOSITORIES -->
   <properties>
+    <!-- this is for allow skip buildnumber from the command line when developing -->
+    <skip.buildnumber>false</skip.buildnumber>
     <!-- java versions and encoding -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.java.version>1.8</project.java.version>
@@ -41,6 +49,7 @@
     <maven.jar.plugin>2.4</maven.jar.plugin>
     <maven.compiler.plugin>3.3</maven.compiler.plugin>
     <maven.clean.plugin>2.6.1</maven.clean.plugin>
+    <maven.buildnumber.plugin>1.4</maven.buildnumber.plugin>
     <maven.build.helper.plugin>1.9</maven.build.helper.plugin>
     <maven.shade.plugin>2.4.3</maven.shade.plugin>
     <!-- distribution properties -->
@@ -143,6 +152,31 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+
+      <!-- This is for the build number in the variable ${buildNumber} -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>${maven.buildnumber.plugin}</version>
+        <executions>
+          <execution>
+            <phase>validate</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <skip>${skip.buildnumber}</skip>
+          <shortRevisionLength>8</shortRevisionLength>
+          <!-- This ensures that even if we are not connected to scm than also take the version from local .svn file -->
+          <revisionOnScmFailure></revisionOnScmFailure>
+          <useLastCommittedRevision>true</useLastCommittedRevision>
+          <timestampFormat>{0,date,yyyy-MM-dd HH:mm:ss}</timestampFormat>
+          <doCheck>true</doCheck>
+          <doUpdate>false</doUpdate>
+        </configuration>
       </plugin>
 
       <!-- Maven Shade Plugin for add dependencies to jar -->
