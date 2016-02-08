@@ -1,0 +1,223 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.magicdgs</groupId>
+  <artifactId>gatkct</artifactId>
+  <packaging>jar</packaging>
+  <version>0.0.0-SNAPSHOT</version>
+  <name>GATKCT</name>
+  <description>GATK Custom Tools</description>
+  <url>https://github.com/magicDGS/GATKCT</url>
+
+  <inceptionYear>2016</inceptionYear>
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>http://www.opensource.org/licenses/mit-license.php</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>${developer.main}</name>
+      <email>${developer.main.email}</email>
+      <roles>
+        <role>Programmer</role>
+        </roles>
+    </developer>
+    <!-- TODO: add developers -->
+  </developers>
+
+  <!-- PROJECT PROPERTIES AND REPOSITORIES -->
+  <properties>
+    <!-- java versions and encoding -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.java.version>1.8</project.java.version>
+    <!-- DEPENDENCY VERSIONS -->
+    <gatk.version>3.5</gatk.version>
+    <junit.version>4.12</junit.version>
+    <!-- maven plugin versions -->
+    <maven.jar.plugin>2.4</maven.jar.plugin>
+    <maven.compiler.plugin>3.3</maven.compiler.plugin>
+    <maven.clean.plugin>2.6.1</maven.clean.plugin>
+    <maven.build.helper.plugin>1.9</maven.build.helper.plugin>
+    <maven.shade.plugin>2.4.3</maven.shade.plugin>
+    <!-- distribution properties -->
+    <dist.folder>bin</dist.folder>
+    <!-- TODO: change Main class -->
+    <main.class>${project.groupId}.${project.artifactId}.Main</main.class>
+    <program.name>${project.name}</program.name>
+    <program.version>${program.majorVersion}.${program.minorVersion}.${program.incrementalVersion}</program.version>
+    <developer.main>Daniel Gomez-Sanchez</developer.main>
+    <developer.main.email>daniel.gomez.sanchez@hotmail.es</developer.main.email>
+  </properties>
+
+  <!-- Repository for github dependencies -->
+  <repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+  </repositories>
+
+  <!-- DEPENDENCIES -->
+  <dependencies>
+    <!-- junit for testing -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- DEPENDENCIES FROM GATK3: should be loaded independently -->
+    <dependency>
+      <groupId>com.github.broadgsa.gatk</groupId>
+      <artifactId>gatk-utils</artifactId>
+      <version>${gatk.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.broadgsa.gatk</groupId>
+      <artifactId>gatk-engine</artifactId>
+      <version>${gatk.version}</version>
+    </dependency>
+
+  </dependencies>
+
+  <!-- BUILDING -->
+  <build>
+
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>**/*.prop</include>
+        </includes>
+      </resource>
+    </resources>
+
+    <plugins>
+
+      <!-- Maven Compiler Pluging -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven.compiler.plugin}</version>
+        <configuration>
+          <source>${project.java.version}</source>
+          <target>${project.java.version}</target>
+        </configuration>
+      </plugin>
+
+      <!-- Maven Jar Pluging -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>${maven.jar.plugin}</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <!-- Parse the version and remove SNAPSHOT tag -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>${maven.build.helper.plugin}</version>
+        <configuration>
+          <propertyPrefix>program</propertyPrefix>
+        </configuration>
+        <executions>
+          <execution>
+            <id>parse-version</id>
+            <goals>
+              <goal>parse-version</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Maven Shade Plugin for add dependencies to jar -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>${maven.shade.plugin}</version>
+        <executions>
+          <!-- Run shade goal on package phase -->
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <!-- output in the distribution directory with only the project name and the version -->
+              <outputDirectory>${project.basedir}/${dist.folder}</outputDirectory>
+              <finalName>${project.name}-${program.version}</finalName>
+              <!-- Example of how to exclude dependencies -->
+              <!-- TODO: remove when finish -->
+              <artifactSet>
+                
+                <excludes>
+                  <!-- do not unpack gsalib -->
+                  <exclude>com.github.broadgsa.gatk:gsalib:tar.gz:*</exclude>
+                  <!--
+                  <exclude>log4j:log4j:jar:</exclude>
+                  <exclude>org.slf4j:slf4j-log4j12</exclude>
+                -->
+                </excludes>
+              </artifactSet>
+              <transformers>
+                <!-- add Main-Class to manifest file -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>${main.class}</mainClass>
+                </transformer>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <!-- For Mac OS case-insensitive issue when trying to decompress: META-INF/LICENSE (file) and META-INF/license (folder) -->
+                    <exclude>META-INF/LICENSE</exclude>
+                    <!-- Exlude for avoid SecurityException: Invalid signature file digest for Manifest main attributes -->
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                   <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <!-- minimize the jar to avoid a huge fat-jar -->
+              <!-- TODO: minimized is not working for the Main class (it complains at the end -->
+              <minimizeJar>false</minimizeJar>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Maven Clean Pluging for remove the distributon folder -->
+      <plugin>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>${maven.clean.plugin}</version>
+        <configuration>
+          <filesets>
+            <fileset>
+              <directory>${dist.folder}</directory>
+              <followSymlinks>false</followSymlinks>
+            </fileset>
+          </filesets>
+        </configuration>
+      </plugin>
+    
+    </plugins>
+
+  </build>
+
+
+</project>
