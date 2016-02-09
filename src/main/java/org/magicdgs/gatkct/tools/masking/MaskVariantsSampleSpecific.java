@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package org.magicdgs.gatkct.tools;
+package org.magicdgs.gatkct.tools.masking;
 
 import htsjdk.tribble.Feature;
 import htsjdk.variant.variantcontext.*;
