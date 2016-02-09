@@ -32,6 +32,7 @@ import htsjdk.variant.vcf.VCFHeaderLine;
 import org.broadinstitute.gatk.engine.CommandLineGATK;
 import org.broadinstitute.gatk.engine.GATKVCFUtils;
 import org.broadinstitute.gatk.engine.arguments.StandardVariantContextInputArgumentCollection;
+import org.broadinstitute.gatk.engine.walkers.NanoSchedulable;
 import org.broadinstitute.gatk.engine.walkers.RodWalker;
 import org.broadinstitute.gatk.engine.walkers.TreeReducible;
 import org.broadinstitute.gatk.utils.GenomeLoc;
@@ -78,7 +79,7 @@ import static org.broadinstitute.gatk.engine.SampleUtils.getUniqueSamplesFromRod
  * @since 07-07-2015
  */
 @DocumentedGATKFeature( groupName = HelpConstants.DOCS_CAT_VARMANIP, extraDocs = {CommandLineGATK.class} )
-public class MaskVariantsSampleSpecific extends RodWalker<Integer, Integer> implements TreeReducible<Integer> {
+public class MaskVariantsSampleSpecific extends RodWalker<Integer, Integer> implements NanoSchedulable, TreeReducible<Integer> {
 
 	@ArgumentCollection
 	protected StandardVariantContextInputArgumentCollection variantCollection = new StandardVariantContextInputArgumentCollection();
