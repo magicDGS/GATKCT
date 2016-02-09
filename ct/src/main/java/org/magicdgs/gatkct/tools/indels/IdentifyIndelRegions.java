@@ -31,6 +31,8 @@ import htsjdk.samtools.util.IntervalList;
 import org.apache.commons.io.FilenameUtils;
 import org.broadinstitute.gatk.engine.CommandLineGATK;
 import org.broadinstitute.gatk.engine.walkers.LocusWalker;
+import org.broadinstitute.gatk.engine.walkers.NanoSchedulable;
+import org.broadinstitute.gatk.engine.walkers.TreeReducible;
 import org.broadinstitute.gatk.utils.commandline.Argument;
 import org.broadinstitute.gatk.utils.commandline.Output;
 import org.broadinstitute.gatk.utils.contexts.AlignmentContext;
@@ -48,32 +50,20 @@ import java.io.IOException;
 /**
  * Identify regions with indels in BAM files
  *
- * <p>
- * [Functionality of this walker]
- * </p>
+ * <p> [Functionality of this walker] </p>
  *
- * <h2>Input</h2>
- * <p>
- * [Input description]
- * </p>
+ * <h2>Input</h2> <p> [Input description] </p>
  *
- * <h2>Output</h2>
- * <p>
- * [Output description]
- * </p>
+ * <h2>Output</h2> <p> [Output description] </p>
  *
- * <h2>Examples</h2>
- * PRE-TAG
- *    java
- *      -jar GenomeAnalysisTK.jar
- *      -T $WalkerName
- * PRE-TAG
+ * <h2>Examples</h2> PRE-TAG java -jar GenomeAnalysisTK.jar -T $WalkerName PRE-TAG
  *
  * @author Daniel Gómez-Sánchez
  * @since 09-02-2016
  */
 @DocumentedGATKFeature(groupName = HelpConstants.DOCS_CAT_DATA, extraDocs = {CommandLineGATK.class})
-public class IdentifyIndelRegions extends LocusWalker<Integer, Integer> {
+public class IdentifyIndelRegions extends LocusWalker<Integer, Integer>
+	implements NanoSchedulable, TreeReducible<Integer> {
 
 	/**
 	 * The output intervals
@@ -149,12 +139,22 @@ public class IdentifyIndelRegions extends LocusWalker<Integer, Integer> {
 		}
 		// emit the interval
 		if (emit) {
-			toEmit.add(indelInterval.pad(indelWin, indelWin));
+			addToEmittedIntervals(indelInterval.pad(indelWin, indelWin));
 		} else {
 			return 0;
 		}
 		// if we reach this point, this position have a masked position
 		return 1;
+	}
+
+	/**
+	 * Add synchroniously the interval to the list of intervals
+	 *
+	 * @param interval the interval to add
+	 */
+	private synchronized void addToEmittedIntervals(Interval interval) {
+		toEmit.add(interval);
+		toEmit = toEmit.uniqued();
 	}
 
 	@Override
@@ -167,9 +167,13 @@ public class IdentifyIndelRegions extends LocusWalker<Integer, Integer> {
 		return value + sum;
 	}
 
+	@Override
+	public Integer treeReduce(Integer lhs, Integer rhs) {
+		return lhs + rhs;
+	}
+
 	public void onTraversalDone(Integer sum) {
 		logger.info(String.format("Found %s positions with indels", sum));
-		toEmit = toEmit.uniqued();
 		logger.info(String.format("Writting down the results in %s", out));
 		if (FilenameUtils.getExtension(out.getName()).equals("interval_list")) {
 			toEmit.write(out);
