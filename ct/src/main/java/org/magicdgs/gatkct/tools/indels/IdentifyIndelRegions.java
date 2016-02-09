@@ -154,7 +154,6 @@ public class IdentifyIndelRegions extends LocusWalker<Integer, Integer>
 	 */
 	private synchronized void addToEmittedIntervals(Interval interval) {
 		toEmit.add(interval);
-		toEmit = toEmit.uniqued();
 	}
 
 	@Override
@@ -174,6 +173,7 @@ public class IdentifyIndelRegions extends LocusWalker<Integer, Integer>
 
 	public void onTraversalDone(Integer sum) {
 		logger.info(String.format("Found %s positions with indels", sum));
+		toEmit = toEmit.uniqued();
 		logger.info(String.format("Writting down the results in %s", out));
 		if (FilenameUtils.getExtension(out.getName()).equals("interval_list")) {
 			toEmit.write(out);
