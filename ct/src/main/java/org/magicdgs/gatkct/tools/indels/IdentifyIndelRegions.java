@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Daniel Gómez-Sánchez
+ * Copyright (c) 2015 Daniel Gómez-Sánchez
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -50,19 +50,32 @@ import java.io.IOException;
 /**
  * Identify regions with indels in BAM files
  *
- * <p> [Functionality of this walker] </p>
+ * <p>
+ * [Functionality of this walker]
+ * </p>
  *
- * <h2>Input</h2> <p> [Input description] </p>
+ * <h2>Input</h2>
+ * <p>
+ * [Input description]
+ * </p>
  *
- * <h2>Output</h2> <p> [Output description] </p>
+ * <h2>Output</h2>
+ * <p>
+ * [Output description]
+ * </p>
  *
- * <h2>Examples</h2> PRE-TAG java -jar GenomeAnalysisTK.jar -T $WalkerName PRE-TAG
+ * <h2>Examples</h2>
+ * PRE-TAG
+ *    java
+ *      -jar GenomeAnalysisTK.jar
+ *      -T $WalkerName
+ * PRE-TAG
  *
  * @author Daniel Gómez-Sánchez
  * @since 09-02-2016
  */
 @DocumentedGATKFeature(groupName = HelpConstants.DOCS_CAT_DATA, extraDocs = {CommandLineGATK.class})
-public class IdentifyIndelRegions extends LocusWalker<Integer, Integer>
+public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 	implements NanoSchedulable, TreeReducible<Integer> {
 
 	/**
@@ -101,13 +114,18 @@ public class IdentifyIndelRegions extends LocusWalker<Integer, Integer>
 		return true;
 	}
 
+	/**
+	 * Map the position to an interval if there is an indel
+	 *
+	 * @return the indel interval (without padding) if an indel is found; <code>null</code>
+	 */
 	@Override
-	public Integer map(RefMetaDataTracker tracker, ReferenceContext reference, AlignmentContext alignment) {
+	public Interval map(RefMetaDataTracker tracker, ReferenceContext reference, AlignmentContext alignment) {
 		// get the pileup for this position
 		ReadBackedPileup pileup = alignment.getBasePileup();
 		// If there is no coverage, there is no indel region
 		if (pileup.isEmpty()) {
-			return 0;
+			return null;
 		}
 		// initialize a new histogram
 		Histogram<Integer> indelLegthCounts = new Histogram<Integer>();
@@ -123,7 +141,7 @@ public class IdentifyIndelRegions extends LocusWalker<Integer, Integer>
 		}
 		// if there is no indel, there are no region
 		if (indelLegthCounts.isEmpty()) {
-			return 0;
+			return null;
 		}
 		Interval indelInterval = new Interval(alignment.getContig(), (int) alignment.getPosition(),
 			(int) alignment.getPosition());
@@ -139,12 +157,10 @@ public class IdentifyIndelRegions extends LocusWalker<Integer, Integer>
 		}
 		// emit the interval
 		if (emit) {
-			addToEmittedIntervals(indelInterval.pad(indelWin, indelWin));
+			return indelInterval;
 		} else {
-			return 0;
+			return null;
 		}
-		// if we reach this point, this position have a masked position
-		return 1;
 	}
 
 	/**
@@ -162,8 +178,13 @@ public class IdentifyIndelRegions extends LocusWalker<Integer, Integer>
 	}
 
 	@Override
-	public Integer reduce(Integer value, Integer sum) {
-		return value + sum;
+	public Integer reduce(Interval interval, Integer value) {
+		if(interval == null) {
+			return value;
+		}
+		addToEmittedIntervals(interval.pad(indelWin, indelWin));
+		// for each interval we will add one
+		return value + 1;
 	}
 
 	@Override
