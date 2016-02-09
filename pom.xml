@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.magicdgs</groupId>
-    <artifactId>gatkc-parent</artifactId>
+    <artifactId>gatkct-parent</artifactId>
     <packaging>pom</packaging>
     <version>0.0.0-SNAPSHOT</version>
     <url>https://github.com/magicDGS/GATKCT</url>

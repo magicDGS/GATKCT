@@ -11,7 +11,7 @@
 
   <parent>
     <groupId>org.magicdgs</groupId>
-    <artifactId>gatkc-parent</artifactId>
+    <artifactId>gatkct-parent</artifactId>
     <version>0.0.0-SNAPSHOT</version>
   </parent>
 
