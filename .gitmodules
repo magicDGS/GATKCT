@@ -2,3 +2,4 @@
 	path = gatk
 	url = https://github.com/broadgsa/gatk.git
 	branch = master
+	ignore = dirty
