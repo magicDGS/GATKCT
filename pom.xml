@@ -9,6 +9,7 @@
     <url>https://github.com/magicDGS/GATKCT</url>
 
     <modules>
+        <!-- GSALIB is required for gatk-utils -->
         <module>gatk/public/gsalib</module>
         <module>gatk/public/gatk-utils</module>
         <module>gatk/public/gatk-engine</module>
