@@ -177,7 +177,11 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 		if (interval == null) {
 			return value;
 		}
-		addToEmittedIntervals(interval.pad(indelWin, indelWin));
+		final Interval toAdd = interval.pad(indelWin, indelWin);
+		// trying to add synchroniously
+		synchronized (toEmit) {
+			toEmit.add(toAdd);
+		}
 		// for each interval we will add one
 		return value + 1;
 	}
