@@ -24,10 +24,7 @@
 package org.magicdgs.gatkct.tools.indels;
 
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.util.Histogram;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Interval;
-import htsjdk.samtools.util.IntervalList;
+import htsjdk.samtools.util.*;
 import org.apache.commons.io.FilenameUtils;
 import org.broadinstitute.gatk.engine.CommandLineGATK;
 import org.broadinstitute.gatk.engine.walkers.LocusWalker;
@@ -46,6 +43,8 @@ import org.broadinstitute.gatk.utils.refdata.RefMetaDataTracker;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 
 /**
  * Identify regions with indels in BAM files
@@ -156,11 +155,7 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 			}
 		}
 		// emit the interval
-		if (emit) {
-			return indelInterval;
-		} else {
-			return null;
-		}
+		return (emit) ? indelInterval : null;
 	}
 
 	/**
@@ -179,7 +174,7 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 
 	@Override
 	public Integer reduce(Interval interval, Integer value) {
-		if(interval == null) {
+		if (interval == null) {
 			return value;
 		}
 		addToEmittedIntervals(interval.pad(indelWin, indelWin));
@@ -193,25 +188,73 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 	}
 
 	public void onTraversalDone(Integer sum) {
-		logger.info(String.format("Found %s positions with indels", sum));
+		final NumberFormat fmt = new DecimalFormat("#,###");
+		logger.info(String.format("Found %s positions with indels", fmt.format(sum)));
 		toEmit = toEmit.uniqued();
 		logger.info(String.format("Writting down the results in %s", out));
-		if (FilenameUtils.getExtension(out.getName()).equals("interval_list")) {
-			toEmit.write(out);
-		} else {
-			try (BufferedWriter bufferedWriter = IOUtil.openFileForBufferedWriting(out)) {
-				for (Interval interval : toEmit) {
-					if (interval.length() == 1) {
-						bufferedWriter.write(String.format("%s:%d", interval.getContig(), interval.getStart()));
-					} else {
-						bufferedWriter.write(
-							String.format("%s:%d-%d", interval.getContig(), interval.getStart(), interval.getEnd()));
-					}
-					bufferedWriter.newLine();
+		long totalBpMasked = 0;
+		final boolean intervalListFormat = FilenameUtils.getExtension(out.getName()).equals("interval_list");
+		try (BufferedWriter bufferedWriter = IOUtil.openFileForBufferedWriting(out)) {
+			for (Interval interval : toEmit) {
+				totalBpMasked += interval.length();
+				if (intervalListFormat) {
+					writeIntervalListFormat(interval, bufferedWriter);
+				} else {
+					writeNotDefaultInterval(interval, bufferedWriter);
 				}
-			} catch (final IOException e) {
-				throw new SAMException("Error writing out intervals to file: " + out.getAbsolutePath(), e);
 			}
+			bufferedWriter.flush();
+			bufferedWriter.close();
+		} catch (final IOException e) {
+			throw new SAMException("Error writing out intervals to file: " + out.getAbsolutePath(), e);
 		}
+		logger.info(String.format("A total of %s intervals (%s bp) were identified", fmt.format(toEmit.size()), fmt.format(totalBpMasked)));
+	}
+
+	/**
+	 * Write an interval in the output formatted as an interval list format
+	 *
+	 * @param interval the interval to write
+	 * @param out      the writer where it should be write
+	 *
+	 * @throws IOException if there is a problem with the writer
+	 */
+	private void writeIntervalListFormat(Interval interval, BufferedWriter out) throws IOException {
+		final FormatUtil format = new FormatUtil();
+		out.write(interval.getContig());
+		out.write('\t');
+		out.write(interval.getContig());
+		out.write('\t');
+		out.write(format.format(interval.getStart()));
+		out.write('\t');
+		out.write(format.format(interval.getEnd()));
+		out.write('\t');
+		out.write(interval.isPositiveStrand() ? '+' : '-');
+		out.write('\t');
+		if (interval.getName() != null) {
+			out.write(interval.getName());
+		} else {
+			out.write(".");
+		}
+		out.newLine();
+	}
+
+	/**
+	 * Write an interval in the output formatted as an non-default interval
+	 *
+	 * @param interval the interval to write
+	 * @param out      the writer where it should be write
+	 *
+	 * @throws IOException if there is a problem with the writer
+	 */
+	private void writeNotDefaultInterval(Interval interval, BufferedWriter out) throws IOException {
+		out.write(interval.getContig());
+		out.write(':');
+		out.write(interval.getStart());
+		if (interval.length() != 1) {
+			out.write('-');
+			out.write(interval.getEnd());
+		}
+		out.newLine();
 	}
 }
