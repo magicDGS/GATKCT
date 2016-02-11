@@ -32,6 +32,7 @@ import org.broadinstitute.gatk.engine.walkers.LocusWalker;
 import org.broadinstitute.gatk.engine.walkers.NanoSchedulable;
 import org.broadinstitute.gatk.engine.walkers.TreeReducible;
 import org.broadinstitute.gatk.utils.commandline.Argument;
+import org.broadinstitute.gatk.utils.commandline.Hidden;
 import org.broadinstitute.gatk.utils.commandline.Output;
 import org.broadinstitute.gatk.utils.contexts.AlignmentContext;
 import org.broadinstitute.gatk.utils.contexts.ReferenceContext;
@@ -130,31 +131,40 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 			return null;
 		}
 		// initialize a new histogram
-		final Histogram<Integer> indelLegthCounts = new Histogram<>();
+		final Histogram<Integer> delLegthCounts = new Histogram<>();
+		int insCount = 0;
 		// iterate over the pileup elements
 		for (PileupElement element : pileup) {
 			if (element.isDeletion()) {
 				// if it is a deletion, add to the histogram of lengths
-				indelLegthCounts.increment(element.getCurrentCigarElement().getLength());
+				delLegthCounts.increment(element.getCurrentCigarElement().getLength());
 			} else if (element.isBeforeInsertion()) {
-				// if it is an insertion, the length is 0
-				indelLegthCounts.increment(0);
+				// if it is an insertion
+				insCount++;
 			}
 		}
 		// if there is no indel, there are no region
-		if (indelLegthCounts.isEmpty()) {
+		if (insCount == 0 && delLegthCounts.isEmpty()) {
 			return null;
 		}
 		Interval indelInterval = new Interval(alignment.getContig(), (int) alignment.getPosition(),
 			(int) alignment.getPosition());
 		boolean emit = false;
 		// iterate over each of the detected indels, to check if we should emit it and how much we did it
-		for (Histogram<Integer>.Bin bin : indelLegthCounts.values()) {
+		for (Histogram<Integer>.Bin bin : delLegthCounts.values()) {
 			if (bin.getValue() >= minCount) {
 				emit = true;
-				if (bin.getId() > indelInterval.length()) {
-					indelInterval = indelInterval.pad(0, bin.getId());
+				if (bin.getId()-1 > indelInterval.length()) {
+					indelInterval = indelInterval.pad(0, bin.getId()-1);
 				}
+			}
+		}
+		// if it is not emited because of deletions, consider insertions
+		if(!emit && insCount != 0) {
+			if(insCount >= minCount) {
+				emit = true;
+				// create a 0-lenght interval
+				indelInterval = indelInterval.pad(-1, 0);
 			}
 		}
 		// emit the interval
