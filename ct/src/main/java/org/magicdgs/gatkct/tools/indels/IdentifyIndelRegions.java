@@ -24,6 +24,7 @@
 package org.magicdgs.gatkct.tools.indels;
 
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.util.*;
 import org.apache.commons.io.FilenameUtils;
 import org.broadinstitute.gatk.engine.CommandLineGATK;
@@ -200,7 +201,12 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 		logger.info(String.format("Writting down the results in %s", out));
 		long totalBpMasked = 0;
 		final boolean intervalListFormat = FilenameUtils.getExtension(out.getName()).equals("interval_list");
+		// write the header if it is an interval list format
 		try (BufferedWriter bufferedWriter = IOUtil.openFileForBufferedWriting(out)) {
+			if(intervalListFormat) {
+				final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
+				codec.encode(bufferedWriter, toEmit.getHeader());
+			}
 			for (Interval interval : toEmit) {
 				totalBpMasked += interval.length();
 				if (intervalListFormat) {
