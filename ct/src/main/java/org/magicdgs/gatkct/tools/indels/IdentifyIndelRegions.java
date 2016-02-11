@@ -32,7 +32,6 @@ import org.broadinstitute.gatk.engine.walkers.LocusWalker;
 import org.broadinstitute.gatk.engine.walkers.NanoSchedulable;
 import org.broadinstitute.gatk.engine.walkers.TreeReducible;
 import org.broadinstitute.gatk.utils.commandline.Argument;
-import org.broadinstitute.gatk.utils.commandline.Hidden;
 import org.broadinstitute.gatk.utils.commandline.Output;
 import org.broadinstitute.gatk.utils.contexts.AlignmentContext;
 import org.broadinstitute.gatk.utils.contexts.ReferenceContext;
@@ -153,22 +152,18 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 		// iterate over each of the detected indels, to check if we should emit it and how much we did it
 		for (Histogram<Integer>.Bin bin : delLegthCounts.values()) {
 			if (bin.getValue() >= minCount) {
-				emit = true;
-				if (bin.getId()-1 > indelInterval.length()) {
-					indelInterval = indelInterval.pad(0, bin.getId()-1);
-				}
+				// the interval is found
+				return indelInterval;
 			}
 		}
 		// if it is not emited because of deletions, consider insertions
-		if(!emit && insCount != 0) {
-			if(insCount >= minCount) {
-				emit = true;
+		if (insCount != 0) {
+			if (insCount >= minCount) {
 				// create a 0-lenght interval
-				indelInterval = indelInterval.pad(-1, 0);
+				return indelInterval.pad(-1, 0);
 			}
 		}
-		// emit the interval
-		return (emit) ? indelInterval : null;
+		return null;
 	}
 
 	/**
@@ -191,7 +186,7 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 			return value;
 		}
 		final Interval toAdd = interval.pad(indelWin, indelWin);
-		// trying to add synchroniously
+		// TODO: it seems that is not working
 		synchronized (toEmit) {
 			toEmit.add(toAdd);
 		}
@@ -213,7 +208,7 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 		final boolean intervalListFormat = FilenameUtils.getExtension(out.getName()).equals("interval_list");
 		// write the header if it is an interval list format
 		try (BufferedWriter bufferedWriter = IOUtil.openFileForBufferedWriting(out)) {
-			if(intervalListFormat) {
+			if (intervalListFormat) {
 				final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
 				codec.encode(bufferedWriter, toEmit.getHeader());
 			}
@@ -230,7 +225,8 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 		} catch (final IOException e) {
 			throw new SAMException("Error writing out intervals to file: " + out.getAbsolutePath(), e);
 		}
-		logger.info(String.format("A total of %s intervals (%s bp) were identified", fmt.format(toEmit.size()), fmt.format(totalBpMasked)));
+		logger.info(String.format("A total of %s intervals (%s bp) were identified", fmt.format(toEmit.size()),
+			fmt.format(totalBpMasked)));
 	}
 
 	/**
