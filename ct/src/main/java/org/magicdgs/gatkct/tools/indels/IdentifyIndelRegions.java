@@ -29,7 +29,6 @@ import htsjdk.samtools.util.*;
 import org.apache.commons.io.FilenameUtils;
 import org.broadinstitute.gatk.engine.CommandLineGATK;
 import org.broadinstitute.gatk.engine.walkers.LocusWalker;
-import org.broadinstitute.gatk.engine.walkers.NanoSchedulable;
 import org.broadinstitute.gatk.engine.walkers.TreeReducible;
 import org.broadinstitute.gatk.utils.commandline.Argument;
 import org.broadinstitute.gatk.utils.commandline.Output;
@@ -75,8 +74,7 @@ import java.text.NumberFormat;
  * @since 09-02-2016
  */
 @DocumentedGATKFeature(groupName = HelpConstants.DOCS_CAT_DATA, extraDocs = {CommandLineGATK.class})
-public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
-	implements NanoSchedulable, TreeReducible<Integer> {
+public class IdentifyIndelRegions extends LocusWalker<Interval, Integer> implements TreeReducible<Integer> {
 
 	/**
 	 * The output intervals
@@ -186,7 +184,6 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 			return value;
 		}
 		final Interval toAdd = interval.pad(indelWin, indelWin);
-		// TODO: it seems that is not working
 		synchronized (toEmit) {
 			toEmit.add(toAdd);
 		}
