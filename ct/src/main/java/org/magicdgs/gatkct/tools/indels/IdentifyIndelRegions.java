@@ -101,6 +101,8 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 	// this is the interval list that we will emit
 	private IntervalList toEmit;
 
+	private final static FormatUtil format = new FormatUtil();
+
 	public void initialize() {
 		super.initialize();
 		// initialize the interval list with the header from the inputs
@@ -127,7 +129,7 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 			return null;
 		}
 		// initialize a new histogram
-		Histogram<Integer> indelLegthCounts = new Histogram<Integer>();
+		final Histogram<Integer> indelLegthCounts = new Histogram<>();
 		// iterate over the pileup elements
 		for (PileupElement element : pileup) {
 			if (element.isDeletion()) {
@@ -224,7 +226,6 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 	 * @throws IOException if there is a problem with the writer
 	 */
 	private void writeIntervalListFormat(Interval interval, BufferedWriter out) throws IOException {
-		final FormatUtil format = new FormatUtil();
 		out.write(interval.getContig());
 		out.write('\t');
 		out.write(interval.getContig());
@@ -254,10 +255,10 @@ public class IdentifyIndelRegions extends LocusWalker<Interval, Integer>
 	private void writeNotDefaultInterval(Interval interval, BufferedWriter out) throws IOException {
 		out.write(interval.getContig());
 		out.write(':');
-		out.write(interval.getStart());
+		out.write(format.format(interval.getStart()));
 		if (interval.length() != 1) {
 			out.write('-');
-			out.write(interval.getEnd());
+			out.write(format.format(interval.getEnd()));
 		}
 		out.newLine();
 	}
