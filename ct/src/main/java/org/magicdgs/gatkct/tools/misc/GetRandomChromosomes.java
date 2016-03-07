@@ -178,7 +178,7 @@ public class GetRandomChromosomes extends RodWalker<Integer, Integer> {
             throw new UserException("All samples requested to be included were also requested to be excluded.");
         }
         // log the samples included and generate the samples for the writer
-        TreeSet<String> outputSamples = new TreeSet<String>();
+        TreeSet<String> outputSamples = new TreeSet<>();
         for (String sample : samples) {
             if (!noSamplesSpecified) {
                 logger.info("Including sample '" + sample + "'");
@@ -268,6 +268,7 @@ public class GetRandomChromosomes extends RodWalker<Integer, Integer> {
      * @return homozygous genotype for the chromosome with the allele in the specified index
      */
     private Genotype createGenotypeWithAllele(Genotype genotype, int chr, int alleleIndex) {
+        logger.debug("Creating homozygous genotype for "+genotype.toBriefString());
         return new GenotypeBuilder(genotype)
                 .name(getSampleChromosomeName(genotype.getSampleName(), chr))
                 .alleles(Collections.nCopies(2, genotype.getAllele(alleleIndex)))
