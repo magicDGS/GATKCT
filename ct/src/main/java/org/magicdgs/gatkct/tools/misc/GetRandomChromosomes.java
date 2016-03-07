@@ -179,7 +179,7 @@ public class GetRandomChromosomes extends RodWalker<Integer, Integer> {
             throw new UserException("All samples requested to be included were also requested to be excluded.");
         }
         // log the samples included and generate the samples for the writer
-        HashSet<String> outputSamples = new HashSet<>(samples.size() * 2);
+        TreeSet<String> outputSamples = new TreeSet<>(samples.size() * 2);
         for (String sample : samples) {
             if (!noSamplesSpecified) {
                 logger.info("Including sample '" + sample + "'");
