@@ -244,7 +244,7 @@ public class GetRandomChromosomes extends RodWalker<Integer, Integer> {
             }
             if(geno.isCalled() && !geno.isHom()){
                 // get a random sample
-                final int random = randomizer.nextInt(1);
+                final int random = randomizer.nextInt(2);
                 toReturn.add(createGenotypeWithAllele(geno, 1, random));
                 toReturn.add(createGenotypeWithAllele(geno, 2, Math.abs(random - 1)));
             } else {
