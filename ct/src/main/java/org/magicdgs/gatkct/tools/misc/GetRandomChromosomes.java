@@ -45,7 +45,6 @@ import org.broadinstitute.gatk.utils.variant.GATKVariantContextUtils;
 
 import java.io.File;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * For each sample, assign randomly each allele to each chromosome, and obtain one sample per chromosome.
@@ -179,7 +178,7 @@ public class GetRandomChromosomes extends RodWalker<Integer, Integer> {
             throw new UserException("All samples requested to be included were also requested to be excluded.");
         }
         // log the samples included and generate the samples for the writer
-        TreeSet<String> outputSamples = new TreeSet<>(samples.size() * 2);
+        TreeSet<String> outputSamples = new TreeSet<String>();
         for (String sample : samples) {
             if (!noSamplesSpecified) {
                 logger.info("Including sample '" + sample + "'");
@@ -243,17 +242,17 @@ public class GetRandomChromosomes extends RodWalker<Integer, Integer> {
             if (geno.getPloidy() != 2) {
                 throw new UserException(this.getClass().getSimpleName() + " found a non-diploid sample.");
             }
-            if (geno.isHom()) {
+            if(geno.isCalled() && !geno.isHom()){
+                // get a random sample
+                final int random = randomizer.nextInt(1);
+                toReturn.add(createGenotypeWithAllele(geno, 1, random));
+                toReturn.add(createGenotypeWithAllele(geno, 2, Math.abs(random - 1)));
+            } else {
                 // easy to duplicate if it is homozygous
                 final String sampleName = geno.getSampleName();
                 final GenotypeBuilder builder = new GenotypeBuilder(geno);
                 toReturn.add(builder.name(getSampleChromosomeName(sampleName, 1)).make());
                 toReturn.add(builder.name(getSampleChromosomeName(sampleName, 2)).make());
-            } else {
-                // get a random sample
-                final int random = randomizer.nextInt(1);
-                toReturn.add(createGenotypeWithAllele(geno, 1, random));
-                toReturn.add(createGenotypeWithAllele(geno, 2, Math.abs(random - 1)));
             }
 
         }
