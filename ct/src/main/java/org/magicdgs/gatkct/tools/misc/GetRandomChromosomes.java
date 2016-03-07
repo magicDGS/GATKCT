@@ -238,7 +238,7 @@ public class GetRandomChromosomes extends RodWalker<Integer, Integer> {
      */
     private GenotypesContext createRandomChromosomes(final GenotypesContext genotypes) {
         GenotypesContext toReturn = GenotypesContext.create(genotypes.size() * 2);
-        for (Genotype geno : genotypes) {
+        for (Genotype geno : genotypes.iterateInSampleNameOrder()) {
             // check if the sample is diploid
             if (geno.getPloidy() != 2) {
                 throw new UserException(this.getClass().getSimpleName() + " found a non-diploid sample.");
