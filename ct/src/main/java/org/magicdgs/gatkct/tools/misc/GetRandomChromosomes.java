@@ -180,12 +180,12 @@ public class GetRandomChromosomes extends RodWalker<Integer, Integer> {
         }
         // log the samples included and generate the samples for the writer
         HashSet<String> outputSamples = new HashSet<>(samples.size() * 2);
-        if (!noSamplesSpecified) {
-            for (String sample : samples) {
+        for (String sample : samples) {
+            if (!noSamplesSpecified) {
                 logger.info("Including sample '" + sample + "'");
-                outputSamples.add(getSampleChromosomeName(sample, 1));
-                outputSamples.add(getSampleChromosomeName(sample, 1));
             }
+            outputSamples.add(getSampleChromosomeName(sample, 1));
+            outputSamples.add(getSampleChromosomeName(sample, 1));
         }
         // Initialize VCF header
         Set<VCFHeaderLine> headerLines = VCFUtils.smartMergeHeaders(vcfRods.values(), true);
@@ -237,11 +237,11 @@ public class GetRandomChromosomes extends RodWalker<Integer, Integer> {
      * @return the duplicated genotypes
      */
     private GenotypesContext createRandomChromosomes(final GenotypesContext genotypes) {
-        GenotypesContext toReturn = GenotypesContext.create(genotypes.size());
+        GenotypesContext toReturn = GenotypesContext.create(genotypes.size() * 2);
         for (Genotype geno : genotypes) {
             // check if the sample is diploid
-            if(geno.getPloidy() != 2) {
-                throw new UserException(this.getClass().getSimpleName()+" found a non-diploid sample.");
+            if (geno.getPloidy() != 2) {
+                throw new UserException(this.getClass().getSimpleName() + " found a non-diploid sample.");
             }
             if (geno.isHom()) {
                 // easy to duplicate if it is homozygous
