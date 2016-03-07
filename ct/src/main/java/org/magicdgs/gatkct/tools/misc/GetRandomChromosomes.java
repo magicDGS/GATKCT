@@ -268,7 +268,7 @@ public class GetRandomChromosomes extends RodWalker<Integer, Integer> {
      * @return homozygous genotype for the chromosome with the allele in the specified index
      */
     private Genotype createGenotypeWithAllele(Genotype genotype, int chr, int alleleIndex) {
-        logger.debug("Creating homozygous genotype for "+genotype.toBriefString()+" with allele index "+alleleIndex);
+        logger.debug("Creating homozygous genotype for "+genotype.toString()+" with allele index "+alleleIndex);
         return new GenotypeBuilder(genotype)
                 .name(getSampleChromosomeName(genotype.getSampleName(), chr))
                 .alleles(Collections.nCopies(2, genotype.getAllele(alleleIndex)))
