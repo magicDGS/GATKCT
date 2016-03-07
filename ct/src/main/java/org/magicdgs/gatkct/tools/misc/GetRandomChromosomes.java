@@ -185,7 +185,7 @@ public class GetRandomChromosomes extends RodWalker<Integer, Integer> {
                 logger.info("Including sample '" + sample + "'");
             }
             outputSamples.add(getSampleChromosomeName(sample, 1));
-            outputSamples.add(getSampleChromosomeName(sample, 1));
+            outputSamples.add(getSampleChromosomeName(sample, 2));
         }
         // Initialize VCF header
         Set<VCFHeaderLine> headerLines = VCFUtils.smartMergeHeaders(vcfRods.values(), true);
