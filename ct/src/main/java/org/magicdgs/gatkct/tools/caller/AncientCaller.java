@@ -143,7 +143,7 @@ public class AncientCaller extends LocusWalker<Integer, Long> {
         // Ns in the reference are not handle
         if (referenceContext.getBase() == 'N' || referenceContext.getBase() == 'n') {
             logger.debug("Found N at reference position" + referenceContext.getLocus());
-            return null; // we don't deal with the N ref base case
+            return 0; // we don't deal with the N ref base case
         }
         // Create the variant builder
         VariantContextBuilder variantBuilder = new VariantContextBuilder();
