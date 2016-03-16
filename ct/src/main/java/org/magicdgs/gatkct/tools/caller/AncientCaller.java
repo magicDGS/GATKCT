@@ -80,13 +80,16 @@ public class AncientCaller extends LocusWalker<Integer, Long> {
     @Output(doc = "File to which variants should be written")
     protected VariantContextWriter writer = null;
 
-    @Argument(fullName = "minimum_coverage", shortName = "minCov", doc = "Minimum coverage to call a variant",
+    @Argument(fullName = "maximum_coverage", shortName = "maxCov", doc = "Maximum coverage to call a variant",
             required = false)
-    int minCov = 1;
+    int maxCov = 5;
 
     @Argument(fullName = "minimum_base_quality", shortName = "minBQ", doc = "Minimum base quality to use the bases",
             required = false)
-    int minBQ = 1;
+    int minBQ = 20;
+
+    @Argument(fullName = "single_base_quality", shortName = "sBQ", doc = "Minimum base quality for positions covered by only one read")
+    int sBQ = 30;
 
     @Argument(fullName = "minimum_mapping_quality", shortName = "minMQ",
             doc = "Minimum mapping quality for a read to be considered", required = false)
@@ -103,8 +106,9 @@ public class AncientCaller extends LocusWalker<Integer, Long> {
 
     private String sampleName;
 
-    private final static String LOW_COVERAGE_FILTER = "LowCov";
+    private final static String HIGH_COVERAGE_FILTER = "HighCov";
     private final static String POLYMORPHIC_FILTER = "Poly";
+    private final static String SINGLE_READ_FILTER = "Single";
 
     public void initialize() {
         super.initialize();
@@ -129,8 +133,9 @@ public class AncientCaller extends LocusWalker<Integer, Long> {
         // headerSet.add(new VCFFilterHeaderLine(VCFConstants.PASSES_FILTERS_v4));
         // set filters
         if (!OutputOption.CONFIDENT_VARIANTS.equals(outMode)) {
-            headerSet.add(new VCFFilterHeaderLine(LOW_COVERAGE_FILTER, "Coverage lower than " + minCov + " (user threshold)"));
+            headerSet.add(new VCFFilterHeaderLine(HIGH_COVERAGE_FILTER, "Coverage higher than " + maxCov + " for bases with quality >= "+minBQ+" (user thresholds)"));
             headerSet.add(new VCFFilterHeaderLine(POLYMORPHIC_FILTER, "Polymorphic site"));
+            headerSet.add(new VCFFilterHeaderLine(SINGLE_READ_FILTER, "Single read covering a position with base quality <= "+sBQ+" but >= "+minBQ+ "(user thresholds)"));
         }
         writer.writeHeader(new VCFHeader(headerSet, new ArrayList<String>() {{
             add(sampleName);
@@ -165,7 +170,7 @@ public class AncientCaller extends LocusWalker<Integer, Long> {
 //			}
             return 0;
         }
-        Tuple<Genotype, Set<String>> callingResult = getGenotypeFromPileup(pileup, refAllele, minCov);
+        Tuple<Genotype, Set<String>> callingResult = getGenotypeFromPileup(pileup, refAllele, maxCov, sBQ);
         if (callingResult == null) {
             return 0;
         }
@@ -187,13 +192,14 @@ public class AncientCaller extends LocusWalker<Integer, Long> {
     /**
      * Get the genotype for a concrete sample from the pileup
      *
-     * @param pileup    the pileup for the sample
+     * @param pileup    the pileup for the sample (already filter by quality)
      * @param refAllele the reference allele in this position
-     * @param minCov    the minimum coverage to do not filter
+     * @param maxCov    the minimum coverage to do not filter
+     * @param singleReadBQ base quality for positions covered by a single read
      * @return the genotype and the filters
      * @throws IllegalArgumentException if the pileup contains more than one sample
      */
-    private static Tuple<Genotype, Set<String>> getGenotypeFromPileup(final ReadBackedPileup pileup, final Allele refAllele, int minCov) {
+    private static Tuple<Genotype, Set<String>> getGenotypeFromPileup(final ReadBackedPileup pileup, final Allele refAllele, int maxCov, int singleReadBQ) {
         final Collection<String> samples = pileup.getSamples();
         final HashSet<String> filter = new LinkedHashSet<>();
         if (samples.size() != 1) {
@@ -203,11 +209,20 @@ public class AncientCaller extends LocusWalker<Integer, Long> {
         GenotypeBuilder genotypeBuilder = new GenotypeBuilder(sampleName);
         final int coverage = pileup.depthOfCoverage();
         genotypeBuilder.DP(coverage);
-        if (coverage == 0) {
-            // return a genotype without anything
-            return new Tuple<>(genotypeBuilder.make(), filter);
-        } else if (coverage < minCov) {
-            filter.add(LOW_COVERAGE_FILTER);
+        switch (coverage) {
+            case 0:
+                // return a genotype without anything (this should not happen)
+                return new Tuple<>(genotypeBuilder.make(), filter);
+            case 1:
+                // check the base quality
+                if (pileup.getQuals()[0] < singleReadBQ) {
+                    filter.add(SINGLE_READ_FILTER);
+                }
+                break;
+            default:
+                if (coverage > maxCov) {
+                    filter.add(HIGH_COVERAGE_FILTER);
+                }
         }
         // get the base count in the order A, C, G, T
         int[] baseCounts = pileup.getBaseCounts();
