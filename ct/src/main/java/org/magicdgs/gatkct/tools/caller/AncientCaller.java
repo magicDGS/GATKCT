@@ -30,6 +30,8 @@ import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.*;
+import org.apache.commons.math.MathException;
+import org.apache.commons.math.stat.descriptive.moment.Mean;
 import org.broadinstitute.gatk.engine.CommandLineGATK;
 import org.broadinstitute.gatk.engine.GATKVCFUtils;
 import org.broadinstitute.gatk.engine.GenomeAnalysisEngine;
@@ -43,6 +45,7 @@ import org.broadinstitute.gatk.utils.help.HelpConstants;
 import org.broadinstitute.gatk.utils.pileup.ReadBackedPileup;
 import org.broadinstitute.gatk.utils.refdata.RefMetaDataTracker;
 import org.broadinstitute.gatk.utils.sam.ReadUtils;
+import org.magicdgs.gatkct.util.QualityUtils;
 
 import java.util.*;
 
@@ -110,6 +113,8 @@ public class AncientCaller extends LocusWalker<Integer, Long> {
     private final static String POLYMORPHIC_FILTER = "Poly";
     private final static String SINGLE_READ_FILTER = "Single";
 
+    private final static String AVERAGE_BASE_QUALITY_KEY = "BQ";
+
     public void initialize() {
         super.initialize();
         final GenomeAnalysisEngine toolkit = getToolkit();
@@ -129,6 +134,7 @@ public class AncientCaller extends LocusWalker<Integer, Long> {
         headerSet.add(VCFStandardHeaderLines.getFormatLine(VCFConstants.GENOTYPE_KEY));
         headerSet.add(VCFStandardHeaderLines.getFormatLine(VCFConstants.DEPTH_KEY));
         headerSet.add(VCFStandardHeaderLines.getFormatLine(VCFConstants.GENOTYPE_ALLELE_DEPTHS));
+        headerSet.add(new VCFFormatHeaderLine(AVERAGE_BASE_QUALITY_KEY, 1, VCFHeaderLineType.Float, "Average base quality for the reads used in the calling"));
         // TODO: I don't know if PASS should be added
         // headerSet.add(new VCFFilterHeaderLine(VCFConstants.PASSES_FILTERS_v4));
         // set filters
@@ -209,13 +215,15 @@ public class AncientCaller extends LocusWalker<Integer, Long> {
         GenotypeBuilder genotypeBuilder = new GenotypeBuilder(sampleName);
         final int coverage = pileup.depthOfCoverage();
         genotypeBuilder.DP(coverage);
+        float averageQual = (float) QualityUtils.averageQuality(pileup.getQuals());
+        genotypeBuilder.attribute(AVERAGE_BASE_QUALITY_KEY, averageQual);
         switch (coverage) {
             case 0:
                 // return a genotype without anything (this should not happen)
                 return new Tuple<>(genotypeBuilder.make(), filter);
             case 1:
-                // check the base quality
-                if (pileup.getQuals()[0] < singleReadBQ) {
+                // check the base quality (in this case, the average is exactly the same
+                if (averageQual < singleReadBQ) {
                     filter.add(SINGLE_READ_FILTER);
                 }
                 break;
